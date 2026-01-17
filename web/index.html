@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log-Zero Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f0f1a;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #16213e;
+            --accent: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-orange: #ff6b35;
+            --accent-purple: #a855f7;
+            --text-primary: #ffffff;
+            --text-secondary: #8892b0;
+            --border: #2d3748;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-card) 100%);
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-purple) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(90deg, var(--accent), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent-green);
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main Content */
+        .main {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(145deg, var(--bg-card) 0%, var(--bg-secondary) 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 40px rgba(0, 212, 255, 0.1);
+        }
+
+        .stat-card.accent-blue { border-top: 3px solid var(--accent); }
+        .stat-card.accent-green { border-top: 3px solid var(--accent-green); }
+        .stat-card.accent-orange { border-top: 3px solid var(--accent-orange); }
+        .stat-card.accent-purple { border-top: 3px solid var(--accent-purple); }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-change {
+            font-size: 0.75rem;
+            color: var(--accent-green);
+        }
+
+        /* Two Column Layout */
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .two-column { grid-template-columns: 1fr; }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* Templates List */
+        .template-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            transition: background 0.2s;
+        }
+
+        .template-item:hover {
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .template-pattern {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875rem;
+            color: var(--accent);
+        }
+
+        .template-count {
+            background: var(--bg-primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+
+        /* Live Log Feed */
+        .log-feed {
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+        }
+
+        .log-entry {
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 1rem;
+        }
+
+        .log-time {
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        .log-level {
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            flex-shrink: 0;
+        }
+
+        .log-level.error { background: rgba(255, 107, 53, 0.2); color: var(--accent-orange); }
+        .log-level.warn { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+        .log-level.info { background: rgba(0, 212, 255, 0.2); color: var(--accent); }
+
+        .log-message {
+            color: var(--text-secondary);
+        }
+
+        /* Actions */
+        .actions {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-purple) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        /* Input */
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">LZ</div>
+            <h1>Log-Zero</h1>
+        </div>
+        <div class="status-badge">
+            <span class="status-dot"></span>
+            <span>All Systems Operational</span>
+        </div>
+    </header>
+
+    <main class="main">
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card accent-blue">
+                <div class="stat-label">Logs Processed</div>
+                <div class="stat-value" id="logsProcessed">0</div>
+                <div class="stat-change">↑ Real-time updates</div>
+            </div>
+            <div class="stat-card accent-green">
+                <div class="stat-label">Unique Templates</div>
+                <div class="stat-value" id="templates">0</div>
+                <div class="stat-change">Drain algorithm</div>
+            </div>
+            <div class="stat-card accent-orange">
+                <div class="stat-label">Compression Ratio</div>
+                <div class="stat-value" id="compression">85%</div>
+                <div class="stat-change">Storage saved</div>
+            </div>
+            <div class="stat-card accent-purple">
+                <div class="stat-label">Processing Speed</div>
+                <div class="stat-value" id="speed">100k/s</div>
+                <div class="stat-change">Logs per second</div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions">
+            <div class="input-group">
+                <input type="text" class="input" id="logInput" placeholder="Enter a log message to ingest...">
+                <button class="btn btn-primary" onclick="ingestLog()">Ingest Log</button>
+            </div>
+            <button class="btn btn-secondary" onclick="generateLogs()">Generate 10 Logs</button>
+            <button class="btn btn-secondary" onclick="refreshStats()">Refresh</button>
+        </div>
+
+        <!-- Two Column Layout -->
+        <div class="two-column">
+            <!-- Templates -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">📊 Log Templates</span>
+                    <span id="templateCount">0 templates</span>
+                </div>
+                <div class="card-body" id="templatesList">
+                    <div class="template-item">
+                        <span class="template-pattern">Loading templates...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Feed -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">📡 Live Feed</span>
+                    <span id="feedStatus">Connected</span>
+                </div>
+                <div class="card-body">
+                    <div class="log-feed" id="logFeed">
+                        <div class="log-entry">
+                            <span class="log-time">--:--:--</span>
+                            <span class="log-level info">INFO</span>
+                            <span class="log-message">Waiting for logs...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        Log-Zero | High-Performance AI-Powered Log Compression
+    </footer>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api/v1';
+        const INGESTION_URL = 'http://localhost:8091';
+
+        // Fetch and update stats
+        async function refreshStats() {
+            try {
+                // Get ingestion metrics
+                const metricsRes = await fetch(`${INGESTION_URL}/metrics`);
+                const metrics = await metricsRes.json();
+                
+                document.getElementById('logsProcessed').textContent = metrics.total_logs || metrics.processed || 0;
+                document.getElementById('templates').textContent = metrics.templates || 0;
+                
+                // Get templates
+                const templatesRes = await fetch(`${API_BASE}/logs/templates`);
+                const templatesData = await templatesRes.json();
+                
+                updateTemplatesList(templatesData.templates || []);
+                document.getElementById('templateCount').textContent = `${templatesData.total || 0} templates`;
+                
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+            }
+        }
+
+        // Update templates list
+        function updateTemplatesList(templates) {
+            const container = document.getElementById('templatesList');
+            
+            if (templates.length === 0) {
+                container.innerHTML = '<div class="template-item"><span class="template-pattern">No templates yet. Ingest some logs!</span></div>';
+                return;
+            }
+            
+            container.innerHTML = templates.map(t => `
+                <div class="template-item">
+                    <span class="template-pattern">${escapeHtml(t.pattern)}</span>
+                    <span class="template-count">${t.log_count} logs</span>
+                </div>
+            `).join('');
+        }
+
+        // Ingest a log
+        async function ingestLog() {
+            const input = document.getElementById('logInput');
+            const log = input.value.trim();
+            
+            if (!log) {
+                alert('Please enter a log message');
+                return;
+            }
+            
+            try {
+                const formData = new URLSearchParams();
+                formData.append('log', log);
+                formData.append('source', 'dashboard');
+                
+                const res = await fetch(`${INGESTION_URL}/ingest`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await res.json();
+                addToFeed('INFO', log);
+                input.value = '';
+                
+                setTimeout(refreshStats, 500);
+                
+            } catch (error) {
+                console.error('Error ingesting log:', error);
+                addToFeed('ERROR', 'Failed to ingest log');
+            }
+        }
+
+        // Generate sample logs
+        async function generateLogs() {
+            const sampleLogs = [
+                'ERROR: Connection refused to database at 192.168.1.1:5432',
+                'WARN: High memory usage detected: 85% on server prod-01',
+                'INFO: Request processed in 150ms for user john',
+                'ERROR: Failed to authenticate user admin from IP 10.0.0.5',
+                'INFO: Service started on port 8080',
+                'WARN: Disk usage at 92% on volume /dev/sda1',
+                'ERROR: Timeout after 30s waiting for payment-api',
+                'INFO: Successfully deployed version v2.0.1 to prod-01',
+                'ERROR: Out of memory error on pod auth-service-5',
+                'WARN: SSL certificate expires in 7 days for api.example.com'
+            ];
+            
+            for (const log of sampleLogs) {
+                try {
+                    const formData = new URLSearchParams();
+                    formData.append('log', log);
+                    formData.append('source', 'generator');
+                    
+                    await fetch(`${INGESTION_URL}/ingest`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const level = log.startsWith('ERROR') ? 'ERROR' : log.startsWith('WARN') ? 'WARN' : 'INFO';
+                    addToFeed(level, log);
+                    
+                    await sleep(100);
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+            
+            setTimeout(refreshStats, 500);
+        }
+
+        // Add entry to live feed
+        function addToFeed(level, message) {
+            const feed = document.getElementById('logFeed');
+            const time = new Date().toLocaleTimeString();
+            
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `
+                <span class="log-time">${time}</span>
+                <span class="log-level ${level.toLowerCase()}">${level}</span>
+                <span class="log-message">${escapeHtml(message)}</span>
+            `;
+            
+            feed.insertBefore(entry, feed.firstChild);
+            
+            // Keep only last 50 entries
+            while (feed.children.length > 50) {
+                feed.removeChild(feed.lastChild);
+            }
+        }
+
+        // Helpers
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshStats();
+            setInterval(refreshStats, 5000);
+        });
+
+        // Enter key to submit
+        document.getElementById('logInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') ingestLog();
+        });
+    </script>
+</body>
+</html>

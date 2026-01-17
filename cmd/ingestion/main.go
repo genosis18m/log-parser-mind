@@ -143,9 +143,12 @@ func (s *IngestionService) StartHTTPServer(ctx context.Context) error {
 	// Batch ingest
 	mux.HandleFunc("/ingest/batch", s.handleBatchIngest)
 
+	// Wrap with CORS middleware
+	corsHandler := corsMiddleware(mux)
+
 	server := &http.Server{
 		Addr:    ":" + s.config.HTTPPort,
-		Handler: mux,
+		Handler: corsHandler,
 	}
 
 	go func() {
@@ -202,6 +205,22 @@ func (s *IngestionService) handleBatchIngest(w http.ResponseWriter, r *http.Requ
 	// In production, parse JSON body with multiple logs
 	w.WriteHeader(http.StatusAccepted)
 	w.Write([]byte(`{"status":"batch_accepted"}`))
+}
+
+// corsMiddleware adds CORS headers to responses
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		
+		next.ServeHTTP(w, r)
+	})
 }
 
 func itoa(n int64) string {
