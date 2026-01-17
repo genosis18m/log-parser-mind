@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logzero-compression
+  labels:
+    app: logzero
+    component: compression
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: logzero
+      component: compression
+  template:
+    metadata:
+      labels:
+        app: logzero
+        component: compression
+    spec:
+      containers:
+      - name: compression
+        image: logzero/compression:latest
+        ports:
+        - containerPort: 8090
+          name: http
+        - containerPort: 8091
+          name: grpc
+        env:
+        - name: CLICKHOUSE_HOST
+          value: "clickhouse-service"
+        - name: CLICKHOUSE_PORT
+          value: "9000"
+        - name: REDIS_HOST
+          value: "redis-service"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: WORKER_COUNT
+          value: "100"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8090
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8090
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: compression-service
+  labels:
+    app: logzero
+    component: compression
+spec:
+  type: ClusterIP
+  selector:
+    app: logzero
+    component: compression
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8090
+    targetPort: 8090
+  - name: grpc
+    protocol: TCP
+    port: 8091
+    targetPort: 8091
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: compression-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: logzero-compression
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

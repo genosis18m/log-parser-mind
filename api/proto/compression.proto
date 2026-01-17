@@ -1,0 +1,117 @@
+syntax = "proto3";
+
+package logzero.compression;
+
+option go_package = "github.com/log-zero/log-zero/api/proto";
+
+// CompressionService handles log compression and template management
+service CompressionService {
+  // Compress a batch of logs
+  rpc CompressLogs(CompressRequest) returns (CompressResponse);
+  
+  // Query compressed logs
+  rpc QueryLogs(QueryRequest) returns (QueryResponse);
+  
+  // Get log templates
+  rpc GetTemplates(GetTemplatesRequest) returns (GetTemplatesResponse);
+  
+  // Get template by ID
+  rpc GetTemplate(GetTemplateRequest) returns (Template);
+  
+  // Stream compressed logs in real-time
+  rpc StreamLogs(StreamRequest) returns (stream CompressedLog);
+}
+
+// Request to compress logs
+message CompressRequest {
+  repeated RawLog logs = 1;
+  string source = 2;
+}
+
+// Raw log entry
+message RawLog {
+  string content = 1;
+  int64 timestamp = 2;
+  map<string, string> metadata = 3;
+}
+
+// Response with compressed logs
+message CompressResponse {
+  repeated CompressedLog compressed_logs = 1;
+  CompressionStats stats = 2;
+}
+
+// Compressed log entry
+message CompressedLog {
+  string log_id = 1;
+  string template_id = 2;
+  int64 timestamp = 3;
+  string source = 4;
+  map<string, string> variables = 5;
+  int32 original_size = 6;
+  int32 compressed_size = 7;
+}
+
+// Compression statistics
+message CompressionStats {
+  int32 total_logs = 1;
+  int32 unique_templates = 2;
+  float compression_ratio = 3;
+  int64 processing_time_ms = 4;
+  int64 bytes_saved = 5;
+}
+
+// Query request
+message QueryRequest {
+  string template_id = 1;
+  string source = 2;
+  string start_time = 3;
+  string end_time = 4;
+  int32 limit = 5;
+  int32 offset = 6;
+  string search_text = 7;
+}
+
+// Query response
+message QueryResponse {
+  repeated CompressedLog logs = 1;
+  int32 total_count = 2;
+  bool has_more = 3;
+}
+
+// Get templates request
+message GetTemplatesRequest {
+  string source = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+  string order_by = 4; // "count", "last_seen", "created_at"
+}
+
+// Get templates response
+message GetTemplatesResponse {
+  repeated Template templates = 1;
+  int32 total_count = 2;
+}
+
+// Get single template request
+message GetTemplateRequest {
+  string template_id = 1;
+}
+
+// Log template
+message Template {
+  string template_id = 1;
+  string pattern = 2;
+  int64 log_count = 3;
+  int64 first_seen = 4;
+  int64 last_seen = 5;
+  repeated string sample_logs = 6;
+  map<string, int32> variable_stats = 7;
+}
+
+// Stream request
+message StreamRequest {
+  string source = 1;
+  repeated string template_ids = 2;
+  bool include_raw = 3;
+}

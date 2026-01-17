@@ -1,0 +1,164 @@
+version: '3.8'
+
+services:
+  # API Gateway
+  gateway:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile
+    command: ["./gateway", "-port=8080"]
+    ports:
+      - "8080:8080"
+    environment:
+      - COMPRESSION_SERVICE=http://compression:8090
+      - INGESTION_SERVICE=http://ingestion:8091
+      - AGENT_SERVICE=http://agent:8110
+      - EXPERIENCE_SERVICE=http://experience:8120
+    depends_on:
+      - compression
+      - ingestion
+      - agent
+      - experience
+    networks:
+      - logzero
+
+  # Compression Service
+  compression:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile
+    command: ["./compression", "-http-port=8090"]
+    ports:
+      - "8090:8090"
+    environment:
+      - CLICKHOUSE_URL=clickhouse:9000
+      - REDIS_URL=redis:6379
+    depends_on:
+      - clickhouse
+      - redis
+    networks:
+      - logzero
+
+  # Ingestion Service
+  ingestion:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile
+    command: ["./ingestion", "-http-port=8091", "-workers=100"]
+    ports:
+      - "8091:8091"
+    environment:
+      - CLICKHOUSE_URL=clickhouse:9000
+      - REDIS_URL=redis:6379
+    depends_on:
+      - clickhouse
+      - redis
+    networks:
+      - logzero
+
+  # Agent Service
+  agent:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile
+    command: ["./agent", "-http-port=8110"]
+    ports:
+      - "8110:8110"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-demo-key}
+      - MODEL=${MODEL:-gpt-4}
+    networks:
+      - logzero
+
+  # Experience Service
+  experience:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile
+    command: ["./experience", "-http-port=8120"]
+    ports:
+      - "8120:8120"
+    environment:
+      - POSTGRES_URL=postgres://logzero:logzero@postgres:5432/logzero
+      - QDRANT_URL=qdrant:6333
+    depends_on:
+      - postgres
+      - qdrant
+    networks:
+      - logzero
+
+  # Anomaly Detection Service
+  anomaly:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile
+    command: ["./anomaly", "-http-port=8100"]
+    ports:
+      - "8100:8100"
+    environment:
+      - CLICKHOUSE_URL=clickhouse:9000
+    depends_on:
+      - clickhouse
+    networks:
+      - logzero
+
+  # ClickHouse - Log Storage
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    ports:
+      - "9000:9000"
+      - "8123:8123"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    environment:
+      - CLICKHOUSE_DB=logzero
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=
+    networks:
+      - logzero
+
+  # PostgreSQL - Metadata & Experiences
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=logzero
+      - POSTGRES_PASSWORD=logzero
+      - POSTGRES_DB=logzero
+    networks:
+      - logzero
+
+  # Redis - Caching & Pub/Sub
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - logzero
+
+  # Qdrant - Vector Database
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - logzero
+
+networks:
+  logzero:
+    driver: bridge
+
+volumes:
+  clickhouse_data:
+  postgres_data:
+  redis_data:
+  qdrant_data:

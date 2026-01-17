@@ -1,0 +1,144 @@
+syntax = "proto3";
+
+package logzero.experience;
+
+option go_package = "github.com/log-zero/log-zero/api/proto";
+
+// ExperienceService manages learning from past fixes
+service ExperienceService {
+  // Store a new experience
+  rpc StoreExperience(StoreExperienceRequest) returns (StoreExperienceResponse);
+  
+  // Search similar experiences
+  rpc SearchSimilar(SearchSimilarRequest) returns (SearchSimilarResponse);
+  
+  // Submit feedback for an experience
+  rpc SubmitFeedback(SubmitFeedbackRequest) returns (SubmitFeedbackResponse);
+  
+  // Get experience by ID
+  rpc GetExperience(GetExperienceRequest) returns (Experience);
+  
+  // List experiences
+  rpc ListExperiences(ListExperiencesRequest) returns (ListExperiencesResponse);
+  
+  // Get learning statistics
+  rpc GetLearningStats(GetLearningStatsRequest) returns (LearningStats);
+}
+
+// Request to store experience
+message StoreExperienceRequest {
+  string issue_id = 1;
+  string issue_signature = 2;
+  string issue_context = 3;
+  string fix_applied = 4;
+  repeated string commands_executed = 5;
+  bool success = 6;
+  int32 resolution_time_seconds = 7;
+  map<string, string> metadata = 8;
+}
+
+// Store experience response
+message StoreExperienceResponse {
+  string experience_id = 1;
+  bool stored = 2;
+}
+
+// Search similar experiences request
+message SearchSimilarRequest {
+  string issue_context = 1;
+  string issue_signature = 2;
+  int32 top_k = 3;
+  float min_similarity = 4;
+  bool only_successful = 5;
+}
+
+// Search similar response
+message SearchSimilarResponse {
+  repeated SimilarExperience experiences = 1;
+}
+
+// Similar experience result
+message SimilarExperience {
+  Experience experience = 1;
+  float similarity_score = 2;
+}
+
+// Experience record
+message Experience {
+  string experience_id = 1;
+  string issue_signature = 2;
+  string issue_context = 3;
+  string fix_applied = 4;
+  repeated string commands_executed = 5;
+  bool success = 6;
+  int32 resolution_time_seconds = 7;
+  int64 created_at = 8;
+  int32 feedback_score = 9;
+  int32 times_referenced = 10;
+  map<string, string> metadata = 11;
+}
+
+// Submit feedback request
+message SubmitFeedbackRequest {
+  string experience_id = 1;
+  int32 score = 2; // 1-5
+  string comments = 3;
+  string submitted_by = 4;
+}
+
+// Submit feedback response
+message SubmitFeedbackResponse {
+  bool accepted = 1;
+  float new_average_score = 2;
+}
+
+// Get experience request
+message GetExperienceRequest {
+  string experience_id = 1;
+}
+
+// List experiences request
+message ListExperiencesRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+  string order_by = 3; // "created_at", "score", "times_referenced"
+  bool only_successful = 4;
+}
+
+// List experiences response
+message ListExperiencesResponse {
+  repeated Experience experiences = 1;
+  int32 total_count = 2;
+}
+
+// Get learning stats request
+message GetLearningStatsRequest {
+  string start_time = 1;
+  string end_time = 2;
+}
+
+// Learning statistics
+message LearningStats {
+  int32 total_experiences = 1;
+  int32 successful_fixes = 2;
+  int32 failed_fixes = 3;
+  float success_rate = 4;
+  float average_resolution_time = 5;
+  int32 mttr_improvement_percent = 6;
+  repeated TopPattern top_patterns = 7;
+  repeated TimeSeriesPoint resolution_time_trend = 8;
+}
+
+// Top recurring pattern
+message TopPattern {
+  string issue_signature = 1;
+  int32 occurrence_count = 2;
+  float success_rate = 3;
+  string recommended_fix = 4;
+}
+
+// Time series data point
+message TimeSeriesPoint {
+  int64 timestamp = 1;
+  float value = 2;
+}

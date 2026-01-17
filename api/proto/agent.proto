@@ -1,0 +1,200 @@
+syntax = "proto3";
+
+package logzero.agent;
+
+option go_package = "github.com/log-zero/log-zero/api/proto";
+
+// AgentService handles log analysis and fix proposals
+service AgentService {
+  // Analyze logs to identify issues
+  rpc Analyze(AnalyzeRequest) returns (AnalyzeResponse);
+  
+  // Generate fix proposals for an issue
+  rpc GenerateFix(GenerateFixRequest) returns (GenerateFixResponse);
+  
+  // Execute a fix
+  rpc ExecuteFix(ExecuteFixRequest) returns (ExecuteFixResponse);
+  
+  // Get fix history
+  rpc GetFixHistory(GetFixHistoryRequest) returns (GetFixHistoryResponse);
+  
+  // Stream analysis results
+  rpc StreamAnalysis(StreamAnalysisRequest) returns (stream AnalysisEvent);
+}
+
+// Request to analyze logs
+message AnalyzeRequest {
+  repeated string template_ids = 1;
+  string time_range = 2;
+  string source = 3;
+  AnalysisConfig config = 4;
+}
+
+// Analysis configuration
+message AnalysisConfig {
+  float anomaly_threshold = 1;
+  int32 min_occurrence = 2;
+  bool include_context = 3;
+  repeated string focus_areas = 4; // "errors", "latency", "security"
+}
+
+// Analysis response
+message AnalyzeResponse {
+  repeated Issue issues = 1;
+  AnalysisSummary summary = 2;
+}
+
+// Detected issue
+message Issue {
+  string issue_id = 1;
+  string title = 2;
+  string description = 3;
+  Severity severity = 4;
+  string root_cause = 5;
+  repeated string affected_templates = 6;
+  int64 first_occurrence = 7;
+  int64 last_occurrence = 8;
+  int32 occurrence_count = 9;
+  map<string, string> context = 10;
+}
+
+// Issue severity
+enum Severity {
+  SEVERITY_UNKNOWN = 0;
+  SEVERITY_LOW = 1;
+  SEVERITY_MEDIUM = 2;
+  SEVERITY_HIGH = 3;
+  SEVERITY_CRITICAL = 4;
+}
+
+// Analysis summary
+message AnalysisSummary {
+  int32 total_issues = 1;
+  int32 critical_count = 2;
+  int32 high_count = 3;
+  int32 medium_count = 4;
+  int32 low_count = 5;
+  int64 analysis_time_ms = 6;
+  float confidence_score = 7;
+}
+
+// Request to generate fix
+message GenerateFixRequest {
+  string issue_id = 1;
+  Issue issue = 2;
+  bool include_similar_experiences = 3;
+  int32 max_proposals = 4;
+}
+
+// Fix generation response
+message GenerateFixResponse {
+  repeated FixProposal proposals = 1;
+  repeated SimilarExperience similar_experiences = 2;
+}
+
+// Fix proposal
+message FixProposal {
+  string proposal_id = 1;
+  int32 rank = 2;
+  string description = 3;
+  repeated string commands = 4;
+  RiskLevel risk = 5;
+  string expected_outcome = 6;
+  float confidence = 7;
+  string reasoning = 8;
+  repeated string prerequisites = 9;
+  int32 estimated_time_seconds = 10;
+}
+
+// Risk level
+enum RiskLevel {
+  RISK_UNKNOWN = 0;
+  RISK_LOW = 1;
+  RISK_MEDIUM = 2;
+  RISK_HIGH = 3;
+}
+
+// Similar past experience
+message SimilarExperience {
+  string experience_id = 1;
+  string issue_signature = 2;
+  string fix_applied = 3;
+  bool success = 4;
+  int32 resolution_time_seconds = 5;
+  float similarity_score = 6;
+}
+
+// Request to execute fix
+message ExecuteFixRequest {
+  string proposal_id = 1;
+  string issue_id = 2;
+  FixProposal proposal = 3;
+  bool dry_run = 4;
+  string approved_by = 5;
+}
+
+// Fix execution response
+message ExecuteFixResponse {
+  string execution_id = 1;
+  ExecutionStatus status = 2;
+  repeated ExecutionStep steps = 3;
+  string error_message = 4;
+  int64 execution_time_ms = 5;
+}
+
+// Execution status
+enum ExecutionStatus {
+  EXECUTION_UNKNOWN = 0;
+  EXECUTION_PENDING = 1;
+  EXECUTION_RUNNING = 2;
+  EXECUTION_SUCCESS = 3;
+  EXECUTION_FAILED = 4;
+  EXECUTION_ROLLED_BACK = 5;
+}
+
+// Execution step
+message ExecutionStep {
+  int32 step_number = 1;
+  string command = 2;
+  string output = 3;
+  bool success = 4;
+  int64 duration_ms = 5;
+}
+
+// Get fix history request
+message GetFixHistoryRequest {
+  string source = 1;
+  string start_time = 2;
+  string end_time = 3;
+  int32 limit = 4;
+}
+
+// Fix history response
+message GetFixHistoryResponse {
+  repeated FixRecord records = 1;
+  int32 total_count = 2;
+}
+
+// Fix record
+message FixRecord {
+  string execution_id = 1;
+  string issue_id = 2;
+  string proposal_id = 3;
+  ExecutionStatus status = 4;
+  int64 executed_at = 5;
+  int64 duration_ms = 6;
+  string executed_by = 7;
+}
+
+// Stream analysis request
+message StreamAnalysisRequest {
+  string source = 1;
+  bool real_time = 2;
+}
+
+// Analysis event
+message AnalysisEvent {
+  string event_type = 1;
+  Issue issue = 2;
+  int64 timestamp = 3;
+}

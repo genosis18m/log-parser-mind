@@ -1,0 +1,79 @@
+# Log-Zero Configuration
+# Copy this file to config.yaml and modify as needed
+
+server:
+  port: 8080
+  read_timeout: 30s
+  write_timeout: 30s
+
+# ClickHouse configuration
+clickhouse:
+  host: localhost
+  port: 9000
+  database: logzero
+  username: default
+  password: ""
+  max_open_conns: 10
+  max_idle_conns: 5
+
+# PostgreSQL configuration  
+postgres:
+  host: localhost
+  port: 5432
+  database: logzero
+  username: logzero
+  password: logzero
+  max_conns: 10
+
+# Redis configuration
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
+
+# Qdrant configuration
+qdrant:
+  host: localhost
+  port: 6333
+  collection: experiences
+
+# OpenAI configuration
+openai:
+  api_key: ${OPENAI_API_KEY}
+  model: gpt-4
+  max_tokens: 2000
+  temperature: 0.3
+
+# Drain algorithm configuration
+drain:
+  max_depth: 4
+  similarity_threshold: 0.5
+  max_clusters: 1000
+
+# Worker pool configuration
+workers:
+  count: 100
+  buffer_size: 10000
+
+# Anomaly detection
+anomaly:
+  error_threshold: 3.0
+  volume_threshold: 3.0
+  window: 5m
+
+# Logging
+logging:
+  level: info
+  format: json
+
+# Metrics
+metrics:
+  enabled: true
+  port: 9090
+
+# Feature flags
+features:
+  pii_redaction: true
+  auto_fix: false
+  learning: true
